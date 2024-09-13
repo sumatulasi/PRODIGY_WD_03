@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Setup</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="players-page">
+        <h1>Enter Player Names</h1>
+        <form id="player-form">
+            <div>
+                <label for="player1">Player 1:</label>
+                <input type="text" id="player1" required>
+            </div>
+            <div id="player2-container">
+                <label for="player2">Player 2:</label>
+                <input type="text" id="player2" required>
+            </div>
+            <button type="submit">Play</button>
+        </form>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const gameMode = localStorage.getItem('gameMode');
+            if (gameMode === 'single') {
+                document.getElementById('player2-container').style.display = 'none';
+            }
+        });
+
+        document.getElementById('player-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const player1 = document.getElementById('player1').value;
+            const gameMode = localStorage.getItem('gameMode');
+
+            localStorage.setItem('player1', player1);
+            if (gameMode === 'two') {
+                const player2 = document.getElementById('player2').value;
+                localStorage.setItem('player2', player2);
+            } else {
+                localStorage.setItem('player2', 'AI');
+            }
+            window.location.href = 'game.html';
+        });
+    </script>
+</body>
+</html>

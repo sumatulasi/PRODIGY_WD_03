@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Start</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="start-page">
+        <h1>Welcome to Tic-Tac-Toe</h1>
+        <button id="single-player">Single Player</button>
+        <button id="two-player">Two Player</button>
+        <div id="difficulty-options" style="display: none;">
+            <h2>Select Difficulty</h2>
+            <button data-difficulty="easy">Easy</button>
+            <button data-difficulty="medium">Medium</button>
+            <button data-difficulty="hard">Hard</button>
+        </div>
+    </div>
+    <script>
+        document.getElementById('single-player').addEventListener('click', function() {
+            document.getElementById('difficulty-options').style.display = 'block';
+        });
+
+        document.getElementById('two-player').addEventListener('click', function() {
+            localStorage.setItem('gameMode', 'two');
+            window.location.href = 'players.html';
+        });
+
+        document.querySelectorAll('#difficulty-options button').forEach(button => {
+            button.addEventListener('click', function() {
+                localStorage.setItem('gameMode', 'single');
+                localStorage.setItem('difficulty', this.getAttribute('data-difficulty'));
+                window.location.href = 'players.html';
+            });
+        });
+    </script>
+</body>
+</html>

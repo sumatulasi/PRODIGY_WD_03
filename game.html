@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe Game</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background: url('background.jpg') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        #start-page, #players-page, #game-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #players-page, #game-page {
+            display: none;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            font-size: 24px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #000;
+            cursor: pointer;
+        }
+
+        .winning-cell {
+            background-color: yellow;
+        }
+
+        #scoreboard {
+            display: flex;
+            justify-content: space-between;
+            width: 300px;
+            margin-bottom: 20px;
+        }
+
+        .player-score {
+            font-size: 18px;
+        }
+
+        button {
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="start-page">
+        <h1>Tic-Tac-Toe</h1>
+        <button id="start-game">Start Game</button>
+    </div>
+
+    <div id="players-page">
+        <h1>Enter Player Names</h1>
+        <div>
+            <label for="player1">Player 1:</label>
+            <input type="text" id="player1" placeholder="Player 1">
+        </div>
+        <div>
+            <label for="player2">Player 2:</label>
+            <input type="text" id="player2" placeholder="Player 2">
+        </div>
+        <div>
+            <label for="game-mode">Game Mode:</label>
+            <select id="game-mode">
+                <option value="two">Two Players</option>
+                <option value="single">Single Player</option>
+            </select>
+        </div>
+        <div id="difficulty-level" style="display: none;">
+            <label for="difficulty">Difficulty:</label>
+            <select id="difficulty">
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+            </select>
+        </div>
+        <button id="play-game">Play</button>
+    </div>
+
+    <div id="game-page">
+        <h1 id="game-title"></h1>
+        <div id="scoreboard">
+            <div class="player-score" id="player1-score">
+                <span id="player1-name"></span>: <span id="player1-points">0</span>
+            </div>
+            <div class="player-score" id="player2-score">
+                <span id="player2-name"></span>: <span id="player2-points">0</span>
+            </div>
+        </div>
+        <div class="board">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+        </div>
+        <div id="status"></div>
+        <button id="next-round">Next Round</button>
+        <button id="restart">Restart</button>
+    </div>
+
+    <script>
+        document.getElementById('start-game').addEventListener('click', () => {
+            document.getElementById('start-page').style.display = 'none';
+            document.getElementById('players-page').style.display = 'block';
+        });
+
+        document.getElementById('game-mode').addEventListener('change', (event) => {
+            const difficultyLevel = document.getElementById('difficulty-level');
+            if (event.target.value === 'single') {
+                difficultyLevel.style.display = 'block';
+            } else {
+                difficultyLevel.style.display = 'none';
+            }
+        });
+
+        document.getElementById('play-game').addEventListener('click', () => {
+            const player1 = document.getElementById('player1').value || 'Player 1';
+            const player2 = document.getElementById('player2').value || 'Player 2';
+            const gameMode = document.getElementById('game-mode').value;
+            const difficulty = document.getElementById('difficulty').value;
+
+            localStorage.setItem('player1', player1);
+            localStorage.setItem('player2', player2);
+            localStorage.setItem('gameMode', gameMode);
+            localStorage.setItem('difficulty', difficulty);
+
+            document.getElementById('players-page').style.display = 'none';
+            document.getElementById('game-page').style.display = 'block';
+            initializeGame();
+        });
+
+        const cells = document.querySelectorAll('.cell');
+        const statusDisplay = document.getElementById('status');
+        const nextRoundButton = document.getElementById('next-round');
+        const restartButton = document.getElementById('restart');
+        const player1NameElement = document.getElementById('player1-name');
+        const player2NameElement = document.getElementById('player2-name');
+        const player1PointsElement = document.getElementById('player1-points');
+        const player2PointsElement = document.getElementById('player2-points');
+
+        let gameState = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let player1Points = 0;
+        let player2Points = 0;
+        let round = 1;
+
+        const player1 = localStorage.getItem('player1') || 'Player 1';
+        const player2 = localStorage.getItem('player2') || 'Player 2';
+        const gameMode = localStorage.getItem('gameMode');
+        const difficulty = localStorage.getItem('difficulty') || 'easy';
+
+        const winningConditions = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
+
+        const initializeGame = () => {
+    const player1Name = localStorage.getItem('player1') || 'Player 1';
+    const player2Name = localStorage.getItem('player2') || 'Player 2';
+    const gameMode = localStorage.getItem('gameMode');
+    
+    document.getElementById('game-title').textContent = `${player1Name} vs ${gameMode === 'two' ? player2Name : 'Computer'}`;
+    player1NameElement.textContent = player1Name;
+    player2NameElement.textContent = gameMode === 'two' ? player2Name : 'Computer';
+    statusDisplay.textContent = `It's ${player1Name}'s turn`;
+};
+
+
+        const handleCellPlayed = (clickedCell, clickedCellIndex) => {
+            gameState[clickedCellIndex] = currentPlayer;
+            clickedCell.textContent = currentPlayer;
+        };
+
+        const handlePlayerChange = () => {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            statusDisplay.textContent = `It's ${currentPlayer === 'X' ? player1 : player2}'s turn`;
+            if (gameMode === 'single' && currentPlayer === 'O' && gameActive) {
+                setTimeout(aiPlay, 500); // Add a slight delay for realism
+            }
+        };
+
+        const handleResultValidation = () => {
+            let roundWon = false;
+            let winningCombination = [];
+
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = gameState[winCondition[0]];
+                let b = gameState[winCondition[1]];
+                let c = gameState[winCondition[2]];
+
+                if (a === '' || b === '' || c === '') {
+                    continue;
+                }
+                if (a === b && b === c) {
+                    roundWon = true;
+                    winningCombination = winCondition;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusDisplay.textContent = `${currentPlayer === 'X' ? player1 : player2} WINS!`;
+                gameActive = false;
+                highlightWinningCells(winningCombination);
+               
+                highlightWinningCells(winningCombination);
+                updateScore(currentPlayer);
+                nextRoundButton.textContent = `Round ${round + 1}`;
+                nextRoundButton.style.display = 'inline-block';
+                return;
+            }
+
+            let roundDraw = !gameState.includes('');
+            if (roundDraw) {
+                statusDisplay.textContent = 'Game ended in a draw!';
+                gameActive = false;
+                nextRoundButton.textContent = `Round ${round + 1}`;
+                nextRoundButton.style.display = 'inline-block';
+                return;
+            }
+
+            handlePlayerChange();
+        };
+
+        const highlightWinningCells = (winningCombination) => {
+            winningCombination.forEach(index => {
+                cells[index].classList.add('winning-cell');
+            });
+        };
+
+        const updateScore = (winner) => {
+            if (winner === 'X') {
+                player1Points++;
+                player1PointsElement.textContent = player1Points;
+            } else {
+                player2Points++;
+                player2PointsElement.textContent = player2Points;
+            }
+        };
+
+        const handleCellClick = (clickedCellEvent) => {
+            const clickedCell = clickedCellEvent.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (gameState[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            handleCellPlayed(clickedCell, clickedCellIndex);
+            handleResultValidation();
+        };
+
+        const handleNextRound = () => {
+            gameActive = true;
+            currentPlayer = 'X';
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            round++;
+            statusDisplay.textContent = `It's ${player1}'s turn`;
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('winning-cell');
+            });
+            nextRoundButton.style.display = 'none';
+        };
+
+        const handleRestartGame = () => {
+            gameActive = true;
+            currentPlayer = 'X';
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            player1Points = 0;
+            player2Points = 0;
+            round = 1;
+            player1PointsElement.textContent = player1Points;
+            player2PointsElement.textContent = player2Points;
+            statusDisplay.textContent = `It's ${player1}'s turn`;
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('winning-cell');
+            });
+            nextRoundButton.style.display = 'none';
+            document.getElementById('game-page').style.display = 'none';
+            document.getElementById('players-page').style.display = 'block';
+        };
+
+        const aiPlay = () => {
+            if (!gameActive) return;
+
+            let bestMove;
+            if (difficulty === 'easy') {
+                bestMove = getRandomMove();
+            } else if (difficulty === 'medium') {
+                bestMove = getMediumMove();
+            } else {
+                bestMove = getBestMove(gameState, 'O').index;
+            }
+
+            if (bestMove !== undefined) {
+                handleCellPlayed(cells[bestMove], bestMove);
+                handleResultValidation();
+            }
+        };
+
+        const getRandomMove = () => {
+            const availableMoves = gameState.map((val, index) => val === '' ? index : null).filter(val => val !== null);
+            return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+        };
+
+        const getMediumMove = () => {
+            const winningMove = findWinningMove('O');
+            if (winningMove !== null) return winningMove;
+
+            const blockingMove = findWinningMove('X');
+            if (blockingMove !== null) return blockingMove;
+
+            return getRandomMove();
+        };
+
+        const findWinningMove = (player) => {
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                const [a, b, c] = winCondition;
+
+                if (gameState[a] === player && gameState[b] === player && gameState[c] === '') return c;
+                if (gameState[a] === player && gameState[b] === '' && gameState[c] === player) return b;
+                if (gameState[a] === '' && gameState[b] === player && gameState[c] === player) return a;
+            }
+            return null;
+        };
+
+        const getBestMove = (board, player, depth = 0) => {
+    const opponent = player === 'O' ? 'X' : 'O';
+    const emptyCells = board.map((val, index) => val === '' ? index : null).filter(val => val !== null);
+
+    // Base cases for win, loss, or draw
+    if (checkWin(board, 'X')) return { score: -10 + depth };
+    if (checkWin(board, 'O')) return { score: 10 - depth };
+    if (emptyCells.length === 0) return { score: 0 };
+
+    // Minimax algorithm with alpha-beta pruning
+    let bestMove;
+    let bestScore = player === 'O' ? -Infinity : Infinity;
+    
+    emptyCells.forEach(index => {
+        board[index] = player;
+        const score = getBestMove(board, opponent, depth + 1).score;
+        board[index] = '';
+        
+        if (player === 'O') {
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = index;
+            }
+        } else {
+            if (score < bestScore) {
+                bestScore = score;
+                bestMove = index;
+            }
+        }
+    });
+
+    return { index: bestMove, score: bestScore };
+};
+
+        const checkWin = (board, player) => {
+            return winningConditions.some(condition => {
+                return condition.every(index => board[index] === player);
+            });
+        };
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        nextRoundButton.addEventListener('click', handleNextRound);
+        restartButton.addEventListener('click', handleRestartGame);
+
+        statusDisplay.textContent = `It's ${player1}'s turn`;
+        nextRoundButton.style.display = 'none';
+    </script>
+</body>
+</html>
